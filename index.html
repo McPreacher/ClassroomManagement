@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Dot Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>Classroom Management</h1>
+            <div class="class-controls">
+                <select id="classSelector"></select>
+                <button onclick="manageClasses()" style="font-size: 0.7em;">+ New Class</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="controls">
+            <input type="text" id="studentName" placeholder="New Student Name..." onkeydown="if(event.key==='Enter') addStudent()">
+            <button class="btn-primary" onclick="addStudent()">Add Student</button>
+        </section>
+
+        <div id="studentList" class="grid-container"></div>
+
+        <button id="resetDay" onclick="resetDots()">Reset All Dots for Today</button>
+        <button id="deleteClassBtn" onclick="deleteCurrentClass()" style="background:none; color: #999; width: 100%; border: none; margin-top: 10px; cursor: pointer;">Delete This Entire Class</button>
+    </main>
+
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
+    </script>
+</body>
+</html>

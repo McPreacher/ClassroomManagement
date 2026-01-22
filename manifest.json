@@ -1,0 +1,15 @@
+{
+  "name": "Classroom Management Tracker",
+  "short_name": "ClassTracker",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f4f4f9",
+  "theme_color": "#333",
+  "icons": [
+    {
+      "src": "icons/icon-512.ico",
+      "sizes": "512x512",
+      "type": "image/ico"
+    }
+  ]
+}
