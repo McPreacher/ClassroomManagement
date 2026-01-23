@@ -1,4 +1,4 @@
-const cacheName = 'classroom-v2';
+const cacheName = 'classroom-v3';
 const staticAssets = [
   './',
   './index.html',
@@ -22,3 +22,19 @@ async function cacheFirst(req) {
   const cached = await cache.match(req);
   return cached || fetch(req);
 }
+// This event triggers when the new service worker takes over
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    // If the cache name isn't our current version, delete it!
+                    if (cacheName !== CACHE_NAME) {
+                        console.log('Service Worker: Clearing Old Cache...', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        })
+    );
+});
