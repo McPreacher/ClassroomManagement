@@ -1,5 +1,5 @@
 // Load data or set defaults
-let students = JSON.parse(localStorage.getItem('classroomData')) || { "Default Class": [] };
+let students = JSON.parse(localStorage.getItem('classroomData')) || { "8th Grade": [] };
 let currentClass = localStorage.getItem('lastSelectedClass') || Object.keys(students)[0];
 
 const classSelector = document.getElementById('classSelector');
@@ -11,7 +11,7 @@ function init() {
 
 function updateClassDropdown() {
     classSelector.innerHTML = "";
-    Object.keys(students).forEach(className => {
+    Object.keys(students).sort().forEach(className => {
         const option = document.createElement('option');
         option.value = className;
         option.textContent = className;
@@ -27,27 +27,22 @@ classSelector.addEventListener('change', (e) => {
 });
 
 function manageClasses() {
-    const newClassName = prompt("Enter the name of the new class (e.g., 9th Grade History):");
+    const newClassName = prompt("Enter the name of the new class:");
     if (newClassName && !students[newClassName]) {
         students[newClassName] = [];
         currentClass = newClassName;
-        saveAndRender();
         updateClassDropdown();
-    } else if (students[newClassName]) {
-        alert("That class already exists!");
+        saveAndRender();
     }
 }
 
 function deleteCurrentClass() {
-    if (Object.keys(students).length <= 1) {
-        alert("You must have at least one class.");
-        return;
-    }
-    if (confirm(`Are you sure you want to delete the ENTIRE ${currentClass} class?`)) {
+    if (Object.keys(students).length <= 1) return alert("You must have at least one class.");
+    if (confirm(`Delete the entire ${currentClass} class?`)) {
         delete students[currentClass];
         currentClass = Object.keys(students)[0];
-        saveAndRender();
         updateClassDropdown();
+        saveAndRender();
     }
 }
 
@@ -55,19 +50,24 @@ function addStudent() {
     const input = document.getElementById('studentName');
     const name = input.value.trim();
     if (!name) return;
+    
     students[currentClass].push({ name: name, dots: 0 });
     input.value = "";
     saveAndRender();
 }
 
-function updateDots(index, change) {
-    students[currentClass][index].dots = Math.max(0, students[currentClass][index].dots + change);
-    saveAndRender();
+function updateDots(studentName, change) {
+    // We find by name now because sorting changes the index position
+    const student = students[currentClass].find(s => s.name === studentName);
+    if (student) {
+        student.dots = Math.max(0, student.dots + change);
+        saveAndRender();
+    }
 }
 
-function deleteStudent(index) {
-    if (confirm(`Remove ${students[currentClass][index].name}?`)) {
-        students[currentClass].splice(index, 1);
+function deleteStudent(studentName) {
+    if (confirm(`Remove ${studentName}?`)) {
+        students[currentClass] = students[currentClass].filter(s => s.name !== studentName);
         saveAndRender();
     }
 }
@@ -90,17 +90,20 @@ function renderStudents() {
     container.innerHTML = "";
     if (!students[currentClass]) return;
 
-    students[currentClass].forEach((student, index) => {
+    // SORTING LOGIC: Alphabetical A-Z
+    const sortedList = [...students[currentClass]].sort((a, b) => a.name.localeCompare(b.name));
+
+    sortedList.forEach((student) => {
         const card = document.createElement('div');
         card.className = 'student-card';
         card.innerHTML = `
             <h3>${student.name}</h3>
-            <div class="dot-display">${student.dots} Dots</div>
-            <div class="verse-display">${student.dots * 10} Verses to Copy</div>
-            <button class="dot-btn" onclick="updateDots(${index}, 1)">+ Add Dot</button>
-            <button class="minus-btn" onclick="updateDots(${index}, -1)">-</button>
+            <div class="dot-display">${student.dots}</div>
+            <div class="verse-display">${student.dots * 10} Verses</div>
+            <button class="dot-btn" onclick="updateDots('${student.name}', 1)">+ Dot</button>
+            <button class="minus-btn" onclick="updateDots('${student.name}', -1)">-</button>
             <br>
-            <button class="delete-btn" onclick="deleteStudent(${index})">Remove Student</button>
+            <button class="delete-btn" onclick="deleteStudent('${student.name}')">Remove</button>
         `;
         container.appendChild(card);
     });
