@@ -130,4 +130,25 @@ button {
     font-size: 0.9rem; 
     font-weight: bold;
 }
+
+/* Warning State (Yellow) */
+.student-card.warning {
+    border-top: 5px solid #f1c40f;
+    background-color: #fffdf0;
+}
+
+/* Dot/Danger State (Red) */
+.student-card.danger {
+    border-top: 5px solid #e74c3c;
+    background-color: #fdf2f2;
+}
+
+.warn-btn {
+    background: #f39c12;
+    color: white;
+    padding: 8px 10px;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+    width: 100%;
+}
 /* End of CSS file */
