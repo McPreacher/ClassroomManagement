@@ -45,18 +45,18 @@ header {
 
 .grid-container { 
     display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
-    gap: 12px; 
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+    gap: 10px; 
     margin-top: 15px;
 }
 
 .student-card {
     background: white;
-    padding: 12px;
-    border-radius: 8px;
+    padding: 8px;
+    border-radius: 6px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     text-align: center;
-    border-top: 5px solid var(--primary);
+    border-top: 4px solid var(--primary);
 }
 
 .student-card h3 {
