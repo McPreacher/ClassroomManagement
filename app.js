@@ -22,13 +22,15 @@ async function init() {
  */
 async function saveToCloud() {
     try {
+        // We use a Blob to ensure the data is sent in the 'body' properly
+        const blob = new Blob([JSON.stringify(students)], { type: 'text/plain' });
+        
         await fetch(GOOGLE_SHEET_URL, {
             method: "POST",
-            mode: "no-cors", 
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(students)
+            mode: "no-cors",
+            body: blob
         });
-        console.log("Data synced to Google Sheets");
+        console.log("Cloud sync sent.");
     } catch (error) {
         console.error("Cloud save failed:", error);
     }
