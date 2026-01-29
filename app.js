@@ -24,7 +24,7 @@ async function saveToCloud() {
     try {
         await fetch(GOOGLE_SHEET_URL, {
             method: "POST",
-            mode: "no-cors", // Required for Google Apps Script
+            mode: "no-cors", 
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(students)
         });
@@ -40,12 +40,13 @@ async function pullFromCloud() {
         const cloudData = await response.json();
         
         if (cloudData && Object.keys(cloudData).length > 0) {
-            students = cloudData;
-            // Update local storage so it's available offline next time
+            // MERGE LOGIC: Don't just overwrite; combine classes
+            students = { ...students, ...cloudData };
+            
             localStorage.setItem('classroomData', JSON.stringify(students));
             updateClassDropdown();
             renderStudents();
-            console.log("Data pulled from Google Sheets");
+            console.log("Data merged from Google Sheets");
         }
     } catch (error) {
         console.error("Cloud pull failed:", error);
@@ -72,9 +73,12 @@ classSelector.addEventListener('change', (e) => {
     renderStudents();
 });
 
-function manageClasses() {
+async function manageClasses() {
     const newClassName = prompt("Enter the name of the new class (e.g., 10th Grade):");
     if (newClassName && !students[newClassName]) {
+        // Refresh from cloud before adding to ensure we don't overwrite other classes
+        await pullFromCloud();
+        
         students[newClassName] = [];
         currentClass = newClassName;
         updateClassDropdown();
@@ -157,12 +161,11 @@ function resetDots() {
  * Persistence & UI Rendering
  */
 function saveAndRender() {
-    // Save locally first for instant speed
     localStorage.setItem('classroomData', JSON.stringify(students));
     localStorage.setItem('lastSelectedClass', currentClass);
     renderStudents();
     
-    // Save to Google Sheets in the background
+    // Background sync
     saveToCloud();
 }
 
@@ -202,5 +205,4 @@ function renderStudents() {
     });
 }
 
-// Start the application
 init();
