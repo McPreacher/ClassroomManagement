@@ -23,7 +23,15 @@ header {
 .header-content { 
     display: flex; 
     justify-content: space-between; 
-    align-items: center; 
+    align-items: center;
+    flex-wrap: wrap; /* Allows wrapping on small phones */
+    gap: 10px;
+}
+
+.class-controls {
+    display: flex;
+    gap: 5px;
+    align-items: center;
 }
 
 .controls {
@@ -45,18 +53,29 @@ header {
 
 .grid-container { 
     display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
-    gap: 14px; 
-    margin-top: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+    gap: 10px; 
+    margin-top: 15px;
 }
 
 .student-card {
     background: white;
-    padding: 12px;
-    border-radius: 10px;
+    padding: 8px;
+    border-radius: 6px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     text-align: center;
-    border-top: 8px solid var(--primary);
+    border-top: 5px solid var(--primary);
+    transition: transform 0.1s;
+}
+
+.student-card.warning {
+    border-top: 5px solid #f1c40f;
+    background-color: #fffdf0;
+}
+
+.student-card.danger {
+    border-top: 5px solid #e74c3c;
+    background-color: #fdf2f2;
 }
 
 .student-card h3 {
@@ -89,7 +108,6 @@ button {
     cursor: pointer; 
     border: none; 
     border-radius: 4px; 
-    transition: background 0.2s; 
 }
 
 .btn-primary { 
@@ -98,19 +116,32 @@ button {
     padding: 8px 15px; 
 }
 
+.warn-btn {
+    background: #f39c12;
+    color: white;
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+    width: 100%;
+}
+
+.card-controls {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+}
+
 .dot-btn { 
     background: var(--accent); 
     color: white; 
-    padding: 8px 15px; 
-    font-size: 0.9rem; 
+    padding: 8px 12px; 
     font-weight: bold;
 }
 
 .minus-btn { 
     background: #bdc3c7; 
     color: white;
-    padding: 8px 10px; 
-    margin-left: 2px; 
+    padding: 8px 12px; 
 }
 
 .delete-btn { 
@@ -127,28 +158,5 @@ button {
     padding: 10px; 
     background: #34495e; 
     color: white; 
-    font-size: 0.9rem; 
     font-weight: bold;
 }
-
-/* Warning State (Yellow) */
-.student-card.warning {
-    border-top: 5px solid #f1c40f;
-    background-color: #fffdf0;
-}
-
-/* Dot/Danger State (Red) */
-.student-card.danger {
-    border-top: 5px solid #e74c3c;
-    background-color: #fdf2f2;
-}
-
-.warn-btn {
-    background: #f39c12;
-    color: white;
-    padding: 8px 10px;
-    font-size: 0.9rem;
-    margin-bottom: 5px;
-    width: 100%;
-}
-/* End of CSS file */

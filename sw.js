@@ -1,4 +1,4 @@
-const cacheName = 'classroom-v3';
+const cacheName = 'classroom-v4'; // Incremented to v4
 const staticAssets = [
   './',
   './index.html',
@@ -10,6 +10,22 @@ const staticAssets = [
 self.addEventListener('install', async el => {
   const cache = await caches.open(cacheName);
   await cache.addAll(staticAssets);
+  self.skipWaiting(); // Forces the new service worker to take over immediately
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cName) => {
+                    if (cName !== cacheName) {
+                        console.log('Service Worker: Clearing Old Cache...', cName);
+                        return caches.delete(cName);
+                    }
+                })
+            );
+        })
+    );
 });
 
 self.addEventListener('fetch', el => {
@@ -22,19 +38,3 @@ async function cacheFirst(req) {
   const cached = await cache.match(req);
   return cached || fetch(req);
 }
-// This event triggers when the new service worker takes over
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    // If the cache name isn't our current version, delete it!
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('Service Worker: Clearing Old Cache...', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
-    );
-});

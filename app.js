@@ -1,4 +1,6 @@
-// Load data from localStorage or initialize with a default class
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyknJGe8oo-BScGP70kEeN9vIfu_34nmclmgeiFPGWXoTlELKuzjh_Ue6fSFhvheSEf/exec";
+
+// Load local data as a fallback while the cloud loads
 let students = JSON.parse(localStorage.getItem('classroomData')) || { "8th Grade": [] };
 let currentClass = localStorage.getItem('lastSelectedClass') || Object.keys(students)[0];
 
@@ -7,9 +9,47 @@ const classSelector = document.getElementById('classSelector');
 /**
  * Initialize the App
  */
-function init() {
+async function init() {
     updateClassDropdown();
     renderStudents();
+    
+    // Pull the latest data from Google Sheets on startup
+    await pullFromCloud();
+}
+
+/**
+ * Cloud Sync Functions
+ */
+async function saveToCloud() {
+    try {
+        await fetch(GOOGLE_SHEET_URL, {
+            method: "POST",
+            mode: "no-cors", // Required for Google Apps Script
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(students)
+        });
+        console.log("Data synced to Google Sheets");
+    } catch (error) {
+        console.error("Cloud save failed:", error);
+    }
+}
+
+async function pullFromCloud() {
+    try {
+        const response = await fetch(GOOGLE_SHEET_URL);
+        const cloudData = await response.json();
+        
+        if (cloudData && Object.keys(cloudData).length > 0) {
+            students = cloudData;
+            // Update local storage so it's available offline next time
+            localStorage.setItem('classroomData', JSON.stringify(students));
+            updateClassDropdown();
+            renderStudents();
+            console.log("Data pulled from Google Sheets");
+        }
+    } catch (error) {
+        console.error("Cloud pull failed:", error);
+    }
 }
 
 /**
@@ -17,7 +57,6 @@ function init() {
  */
 function updateClassDropdown() {
     classSelector.innerHTML = "";
-    // Sort class names alphabetically for the dropdown list
     Object.keys(students).sort().forEach(className => {
         const option = document.createElement('option');
         option.value = className;
@@ -66,7 +105,6 @@ function addStudent() {
     const name = input.value.trim();
     if (!name) return;
 
-    // Prevent duplicate names in the same class
     if (students[currentClass].some(s => s.name.toLowerCase() === name.toLowerCase())) {
         alert("Student already exists!");
         return;
@@ -94,7 +132,6 @@ function updateDots(studentName, change) {
     const student = students[currentClass].find(s => s.name === studentName);
     if (student) {
         student.dots = Math.max(0, student.dots + change);
-        // REMOVED: student.warn = false; (This keeps the warning persistent)
         saveAndRender();
     }
 }
@@ -120,9 +157,13 @@ function resetDots() {
  * Persistence & UI Rendering
  */
 function saveAndRender() {
+    // Save locally first for instant speed
     localStorage.setItem('classroomData', JSON.stringify(students));
     localStorage.setItem('lastSelectedClass', currentClass);
     renderStudents();
+    
+    // Save to Google Sheets in the background
+    saveToCloud();
 }
 
 function renderStudents() {
@@ -130,18 +171,16 @@ function renderStudents() {
     container.innerHTML = "";
     if (!students[currentClass]) return;
 
-    // Alphabetical Sorting A-Z
     const sortedList = [...students[currentClass]].sort((a, b) => a.name.localeCompare(b.name));
 
     sortedList.forEach((student) => {
         const card = document.createElement('div');
         
-        // Determine the CSS class based on dot count first (priority), then warnings
         let statusClass = '';
         if (student.dots > 0) {
-            statusClass = 'danger'; // Turns card red
+            statusClass = 'danger'; 
         } else if (student.warn) {
-            statusClass = 'warning'; // Turns card yellow
+            statusClass = 'warning'; 
         }
 
         card.className = `student-card ${statusClass}`;
