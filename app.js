@@ -22,7 +22,7 @@ async function init() {
  */
 async function saveToCloud() {
     try {
-        // We use a Blob to ensure the data is sent in the 'body' properly
+        // Blob ensures the full data string is sent without being chopped off
         const blob = new Blob([JSON.stringify(students)], { type: 'text/plain' });
         
         await fetch(GOOGLE_SHEET_URL, {
@@ -39,10 +39,19 @@ async function saveToCloud() {
 async function pullFromCloud() {
     try {
         const response = await fetch(GOOGLE_SHEET_URL);
-        const cloudData = await response.json();
+        const textData = await response.text();
+        
+        // SAFETY GATE: If the cloud data is broken, empty, or returns an error, STOP.
+        // This prevents the app from overwriting your local names with "nothing".
+        if (!textData || textData.trim() === "" || textData.includes("Error") || !textData.startsWith("{")) {
+            console.warn("Cloud data invalid or empty. Staying with local data.");
+            return;
+        }
+
+        const cloudData = JSON.parse(textData);
         
         if (cloudData && Object.keys(cloudData).length > 0) {
-            // MERGE LOGIC: Don't just overwrite; combine classes
+            // MERGE LOGIC: Combine what's in the cloud with what we have here
             students = { ...students, ...cloudData };
             
             localStorage.setItem('classroomData', JSON.stringify(students));
@@ -78,8 +87,7 @@ classSelector.addEventListener('change', (e) => {
 async function manageClasses() {
     const newClassName = prompt("Enter the name of the new class (e.g., 10th Grade):");
     if (newClassName && !students[newClassName]) {
-        // Refresh from cloud before adding to ensure we don't overwrite other classes
-        await pullFromCloud();
+        await pullFromCloud(); // Pull latest to ensure we have all existing classes
         
         students[newClassName] = [];
         currentClass = newClassName;
