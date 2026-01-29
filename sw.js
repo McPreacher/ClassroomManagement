@@ -1,4 +1,4 @@
-const cacheName = 'classroom-v4'; // Incremented to v4
+const cacheName = 'classroom-v6'; // Bumping to v6
 const staticAssets = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const staticAssets = [
 self.addEventListener('install', async el => {
   const cache = await caches.open(cacheName);
   await cache.addAll(staticAssets);
-  self.skipWaiting(); // Forces the new service worker to take over immediately
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -19,7 +19,6 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 cacheNames.map((cName) => {
                     if (cName !== cacheName) {
-                        console.log('Service Worker: Clearing Old Cache...', cName);
                         return caches.delete(cName);
                     }
                 })
@@ -28,13 +27,18 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-self.addEventListener('fetch', el => {
-  const req = el.request;
-  el.respondWith(cacheFirst(req));
-});
+// The FIX: Only intercept requests for YOUR site, not Google Scripts
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  
+  // If the request is for Google Scripts, let it go straight to the internet
+  if (url.hostname.includes('script.google.com')) {
+    return; 
+  }
 
-async function cacheFirst(req) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(req);
-  return cached || fetch(req);
-}
+  event.respondWith(
+    caches.match(event.request).then(cachedResponse => {
+      return cachedResponse || fetch(event.request);
+    })
+  );
+});

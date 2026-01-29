@@ -38,29 +38,25 @@ async function saveToCloud() {
 
 async function pullFromCloud() {
     try {
-        const response = await fetch(GOOGLE_SHEET_URL);
+        // Adding {redirect: "follow"} helps handle Google's security hops
+        const response = await fetch(GOOGLE_SHEET_URL, { redirect: "follow" });
         const textData = await response.text();
         
-        // SAFETY GATE: If the cloud data is broken, empty, or returns an error, STOP.
-        // This prevents the app from overwriting your local names with "nothing".
-        if (!textData || textData.trim() === "" || textData.includes("Error") || !textData.startsWith("{")) {
-            console.warn("Cloud data invalid or empty. Staying with local data.");
+        // SAFETY GATE: If the data is broken or is a Google Login page, do NOT parse
+        if (!textData || !textData.startsWith("{")) {
+            console.log("Cloud data not ready or invalid. Staying local.");
             return;
         }
 
         const cloudData = JSON.parse(textData);
-        
         if (cloudData && Object.keys(cloudData).length > 0) {
-            // MERGE LOGIC: Combine what's in the cloud with what we have here
             students = { ...students, ...cloudData };
-            
             localStorage.setItem('classroomData', JSON.stringify(students));
             updateClassDropdown();
             renderStudents();
-            console.log("Data merged from Google Sheets");
         }
     } catch (error) {
-        console.error("Cloud pull failed:", error);
+        console.error("Cloud pull blocked by browser or network:", error);
     }
 }
 
