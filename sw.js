@@ -1,4 +1,4 @@
-const cacheName = 'classroom-v6'; // Bumping to v6
+const cacheName = 'classroom-v6';
 const staticAssets = [
   './',
   './index.html',
@@ -27,11 +27,10 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// The FIX: Only intercept requests for YOUR site, not Google Scripts
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   
-  // If the request is for Google Scripts, let it go straight to the internet
+  // BYPASS: Do not try to cache Google Script requests
   if (url.hostname.includes('script.google.com')) {
     return; 
   }

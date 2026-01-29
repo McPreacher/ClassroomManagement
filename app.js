@@ -1,30 +1,19 @@
 const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyknJGe8oo-BScGP70kEeN9vIfu_34nmclmgeiFPGWXoTlELKuzjh_Ue6fSFhvheSEf/exec";
 
-// Load local data as a fallback while the cloud loads
 let students = JSON.parse(localStorage.getItem('classroomData')) || { "8th Grade": [] };
 let currentClass = localStorage.getItem('lastSelectedClass') || Object.keys(students)[0];
 
 const classSelector = document.getElementById('classSelector');
 
-/**
- * Initialize the App
- */
 async function init() {
     updateClassDropdown();
     renderStudents();
-    
-    // Pull the latest data from Google Sheets on startup
     await pullFromCloud();
 }
 
-/**
- * Cloud Sync Functions
- */
 async function saveToCloud() {
     try {
-        // Blob ensures the full data string is sent without being chopped off
         const blob = new Blob([JSON.stringify(students)], { type: 'text/plain' });
-        
         await fetch(GOOGLE_SHEET_URL, {
             method: "POST",
             mode: "no-cors",
@@ -38,13 +27,13 @@ async function saveToCloud() {
 
 async function pullFromCloud() {
     try {
-        // Adding {redirect: "follow"} helps handle Google's security hops
+        // 'redirect: follow' is required because Google Scripts uses redirects
         const response = await fetch(GOOGLE_SHEET_URL, { redirect: "follow" });
         const textData = await response.text();
         
-        // SAFETY GATE: If the data is broken or is a Google Login page, do NOT parse
-        if (!textData || !textData.startsWith("{")) {
-            console.log("Cloud data not ready or invalid. Staying local.");
+        // SAFETY GATE: If not a valid JSON string, ignore it
+        if (!textData || !textData.trim().startsWith("{")) {
+            console.warn("Invalid cloud data received. Keeping local.");
             return;
         }
 
@@ -54,15 +43,13 @@ async function pullFromCloud() {
             localStorage.setItem('classroomData', JSON.stringify(students));
             updateClassDropdown();
             renderStudents();
+            console.log("Sync successful.");
         }
     } catch (error) {
-        console.error("Cloud pull blocked by browser or network:", error);
+        console.error("Cloud pull blocked:", error);
     }
 }
 
-/**
- * Dynamic Class Management
- */
 function updateClassDropdown() {
     classSelector.innerHTML = "";
     Object.keys(students).sort().forEach(className => {
@@ -81,25 +68,19 @@ classSelector.addEventListener('change', (e) => {
 });
 
 async function manageClasses() {
-    const newClassName = prompt("Enter the name of the new class (e.g., 10th Grade):");
+    const newClassName = prompt("New class name:");
     if (newClassName && !students[newClassName]) {
-        await pullFromCloud(); // Pull latest to ensure we have all existing classes
-        
+        await pullFromCloud();
         students[newClassName] = [];
         currentClass = newClassName;
         updateClassDropdown();
         saveAndRender();
-    } else if (students[newClassName]) {
-        alert("That class already exists!");
     }
 }
 
 function deleteCurrentClass() {
-    if (Object.keys(students).length <= 1) {
-        alert("You must have at least one class.");
-        return;
-    }
-    if (confirm(`Are you sure you want to delete the ENTIRE ${currentClass} class?`)) {
+    if (Object.keys(students).length <= 1) return;
+    if (confirm(`Delete ${currentClass}?`)) {
         delete students[currentClass];
         currentClass = Object.keys(students)[0];
         updateClassDropdown();
@@ -107,25 +88,11 @@ function deleteCurrentClass() {
     }
 }
 
-/**
- * Student Management Logic
- */
 function addStudent() {
     const input = document.getElementById('studentName');
     const name = input.value.trim();
-    if (!name) return;
-
-    if (students[currentClass].some(s => s.name.toLowerCase() === name.toLowerCase())) {
-        alert("Student already exists!");
-        return;
-    }
-
-    students[currentClass].push({ 
-        name: name, 
-        dots: 0, 
-        warn: false 
-    });
-    
+    if (!name || students[currentClass].some(s => s.name.toLowerCase() === name.toLowerCase())) return;
+    students[currentClass].push({ name, dots: 0, warn: false });
     input.value = "";
     saveAndRender();
 }
@@ -154,24 +121,16 @@ function deleteStudent(studentName) {
 }
 
 function resetDots() {
-    if (confirm(`Clear all dots and warnings for ${currentClass}?`)) {
-        students[currentClass].forEach(s => {
-            s.dots = 0;
-            s.warn = false;
-        });
+    if (confirm(`Reset all?`)) {
+        students[currentClass].forEach(s => { s.dots = 0; s.warn = false; });
         saveAndRender();
     }
 }
 
-/**
- * Persistence & UI Rendering
- */
 function saveAndRender() {
     localStorage.setItem('classroomData', JSON.stringify(students));
     localStorage.setItem('lastSelectedClass', currentClass);
     renderStudents();
-    
-    // Background sync
     saveToCloud();
 }
 
@@ -179,21 +138,11 @@ function renderStudents() {
     const container = document.getElementById('studentList');
     container.innerHTML = "";
     if (!students[currentClass]) return;
-
     const sortedList = [...students[currentClass]].sort((a, b) => a.name.localeCompare(b.name));
-
     sortedList.forEach((student) => {
         const card = document.createElement('div');
-        
-        let statusClass = '';
-        if (student.dots > 0) {
-            statusClass = 'danger'; 
-        } else if (student.warn) {
-            statusClass = 'warning'; 
-        }
-
+        let statusClass = student.dots > 0 ? 'danger' : (student.warn ? 'warning' : '');
         card.className = `student-card ${statusClass}`;
-        
         card.innerHTML = `
             <h3>${student.name}</h3>
             <button class="warn-btn" onclick="toggleWarning('${student.name}')">
