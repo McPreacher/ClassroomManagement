@@ -1,4 +1,4 @@
-const cacheName = 'classroom-v6';
+const cacheName = 'classroom-v7';
 const staticAssets = [
   './',
   './index.html',
