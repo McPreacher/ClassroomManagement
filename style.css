@@ -3,8 +3,10 @@
     --accent: #e74c3c;
     --success: #27ae60;
     --bg: #f8f9fa;
+    --warning: #f1c40f;
 }
 
+/* Base Layout */
 body { 
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
     background: var(--bg); 
@@ -24,7 +26,7 @@ header {
     display: flex; 
     justify-content: space-between; 
     align-items: center;
-    flex-wrap: wrap; /* Allows wrapping on small phones */
+    flex-wrap: wrap;
     gap: 10px;
 }
 
@@ -34,6 +36,7 @@ header {
     align-items: center;
 }
 
+/* Controls Section */
 .controls {
     background: white;
     padding: 10px;
@@ -51,112 +54,168 @@ header {
     border-radius: 4px;
 }
 
+/* The Student Grid */
 .grid-container { 
     display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-    gap: 10px; 
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+    gap: 12px; 
     margin-top: 15px;
 }
 
+/* Student Cards */
 .student-card {
     background: white;
-    padding: 8px;
-    border-radius: 6px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     text-align: center;
     border-top: 5px solid var(--primary);
     transition: transform 0.1s;
 }
 
-.student-card.warning {
-    border-top: 5px solid #f1c40f;
-    background-color: #fffdf0;
+.student-card.warning { border-top-color: var(--warning); background-color: #fffdf0; }
+.student-card.danger { border-top-color: var(--accent); background-color: #fdf2f2; }
+
+/* Card Header & Grade Badge */
+.card-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 10px; 
 }
 
-.student-card.danger {
-    border-top: 5px solid #e74c3c;
-    background-color: #fdf2f2;
-}
-
-.student-card h3 {
-    margin: 0 0 5px 0;
-    font-size: 1.1rem;
+.card-header h3 {
+    margin: 0;
+    font-size: 1rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 100px;
 }
 
-.dot-display { 
+.daily-score { 
+    background: var(--primary); 
+    color: white; 
+    padding: 2px 8px; 
+    border-radius: 4px; 
+    font-weight: bold; 
+    font-size: 0.9rem;
+}
+
+/* Warning Button Styles */
+.warn-btn {
+    background: #bdc3c7;
+    color: white;
+    padding: 6px 0;
+    font-size: 0.75rem;
+    margin-bottom: 10px;
+    width: 100%;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    transition: 0.2s;
+}
+
+.warn-btn.active { 
+    background: #e67e22; 
+    font-weight: bold;
+}
+
+/* Mark Controls (The +/- Section) */
+.mark-section { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 8px; 
+    margin: 10px 0; 
+    border-top: 1px solid #eee; 
+    padding-top: 10px; 
+}
+
+.mark-control { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+}
+
+.mark-label { 
+    font-size: 0.6rem; 
+    color: #7f8c8d; 
+    text-transform: uppercase; 
+    font-weight: bold; 
+    height: 24px; 
+    line-height: 1.1;
+    text-align: center; 
+}
+
+.count { 
     font-size: 1.4rem; 
     font-weight: bold; 
     color: var(--accent); 
-    margin: 5px 0; 
+    margin: 4px 0; 
 }
 
-.verse-display { 
-    background: #fdf2f2; 
-    border: 1px solid #f9d6d6;
-    padding: 4px; 
-    border-radius: 4px; 
+.btns { display: flex; gap: 4px; }
+.btns button { 
+    background: #ecf0f1; 
+    color: #333; 
+    padding: 4px 10px; 
     font-weight: bold; 
-    margin-bottom: 10px;
-    color: #c0392b;
-    font-size: 0.85rem;
+    border: 1px solid #ddd; 
+    border-radius: 4px;
+    cursor: pointer;
 }
 
-button { 
-    cursor: pointer; 
+.btns button:first-child { 
+    background: var(--accent); 
+    color: white; 
     border: none; 
-    border-radius: 4px; 
 }
+
+/* Weekly Footer */
+.weekly-summary { 
+    background: #f4f6f7; 
+    font-size: 0.7rem; 
+    padding: 6px; 
+    border-radius: 4px; 
+    color: #34495e; 
+    border: 1px solid #eee;
+    margin: 10px 0;
+}
+
+/* Global Buttons */
+button { cursor: pointer; border: none; }
 
 .btn-primary { 
     background: var(--success); 
     color: white; 
     padding: 8px 15px; 
-}
-
-.warn-btn {
-    background: #f39c12;
-    color: white;
-    padding: 8px 10px;
-    font-size: 0.8rem;
-    margin-bottom: 5px;
-    width: 100%;
-}
-
-.card-controls {
-    display: flex;
-    justify-content: center;
-    gap: 5px;
-}
-
-.dot-btn { 
-    background: var(--accent); 
-    color: white; 
-    padding: 8px 12px; 
-    font-weight: bold;
-}
-
-.minus-btn { 
-    background: #bdc3c7; 
-    color: white;
-    padding: 8px 12px; 
+    border-radius: 4px;
 }
 
 .delete-btn { 
     background: none; 
     color: #95a5a6; 
-    font-size: 0.7rem; 
-    margin-top: 12px; 
+    font-size: 0.65rem; 
     text-decoration: underline; 
+    margin-top: 5px;
 }
 
 #resetDay { 
     width: 100%; 
-    margin-top: 30px; 
-    padding: 10px; 
-    background: #34495e; 
+    margin-top: 20px; 
+    padding: 12px; 
+    background: var(--primary); 
     color: white; 
+    font-weight: bold;
+    border-radius: 6px;
+}
+
+#fullReset { 
+    background: #95a5a6; 
+    color: white; 
+    width: 100%; 
+    margin-top: 10px; 
+    padding: 10px; 
+    border-radius: 6px;
     font-weight: bold;
 }

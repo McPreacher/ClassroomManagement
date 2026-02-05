@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Classroom Management</title>
-    <link rel="stylesheet" href="style.css?v=7">
+    <link rel="stylesheet" href="style.css?v=8">
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
     <header>
         <div class="header-content">
-            <h1> DCS Classroom Management</h1>
+            <h1>Class Participation and Behavior</h1>
             <div class="class-controls">
                 <select id="classSelector"></select>
                 <button onclick="manageClasses()" style="font-size: 0.7em;">+ New Class</button>
@@ -26,11 +26,13 @@
 
         <div id="studentList" class="grid-container"></div>
 
-        <button id="resetDay" onclick="resetDots()">Reset All Dots for Today</button>
-        <button id="deleteClassBtn" onclick="deleteCurrentClass()" style="background:none; color: #999; width: 100%; border: none; margin-top: 10px; cursor: pointer;">Delete This Entire Class</button>
+        <button id="resetDay" onclick="resetDots()">End Day (Save Daily Grades)</button>
+        <button id="fullReset" onclick="fullWeeklyReset()" style="background: #95a5a6; color: white; width: 100%; margin-top: 10px; padding: 10px; border-radius: 6px; font-weight: bold; border:none; cursor:pointer; opacity: 0.8;">Start New Week (Clear Totals)</button>
+        
+        <button id="deleteClassBtn" onclick="deleteCurrentClass()" style="background:none; color: #999; width: 100%; border: none; margin-top: 20px; cursor: pointer; font-size: 0.8rem;">Delete This Entire Class</button>
     </main>
 
-    <script src="app.js?v=7"></script>
+    <script src="app.js?v=8"></script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js');

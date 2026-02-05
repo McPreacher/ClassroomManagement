@@ -1,95 +1,182 @@
 const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyM4uGNoxF4TrEteA_UE_7qQfn0zJ0AjKXPt5mDLhmi9ZHKhiS0uzW55vQVNt4pnruF/exec";
 
-// Load local data as a fallback while the cloud loads
 let students = JSON.parse(localStorage.getItem('classroomData')) || { "8th Grade": [] };
 let currentClass = localStorage.getItem('lastSelectedClass') || Object.keys(students)[0];
 
 const classSelector = document.getElementById('classSelector');
 
-/**
- * Initialize the App
- */
 async function init() {
     updateClassDropdown();
     renderStudents();
-    
-    // Pull the latest data from Google Sheets on startup
     await pullFromCloud();
 }
 
+/** * MATH ENGINE 
+ */
+function calculateDailyGrade(student) {
+    let score = 100;
+    score -= (student.behaviorMarks || 0) * 5;
+    score -= (student.instructionMarks || 0) * 5;
+    return Math.max(0, score);
+}
+
 /**
- * Cloud Sync Functions
+ * ACTIONS
+ */
+function addStudent() {
+    const input = document.getElementById('studentName');
+    const name = input.value.trim();
+    if (!name || students[currentClass].some(s => s.name.toLowerCase() === name.toLowerCase())) return;
+
+    students[currentClass].push({ 
+        name, 
+        warn: false, 
+        behaviorMarks: 0, 
+        instructionMarks: 0,
+        weeklyBehavior: 0,
+        weeklyInstruction: 0,
+        daysTracked: 0,
+        totalScore: 0
+    });
+    input.value = "";
+    saveAndRender();
+}
+
+function updateMark(studentName, type, change) {
+    const student = students[currentClass].find(s => s.name === studentName);
+    if (student) {
+        student[type] = Math.max(0, (student[type] || 0) + change);
+        saveAndRender();
+    }
+}
+
+function toggleWarning(studentName) {
+    const student = students[currentClass].find(s => s.name === studentName);
+    if (student) {
+        student.warn = !student.warn;
+        saveAndRender();
+    }
+}
+
+function resetDots() {
+    if (confirm(`End Day for ${currentClass}? Today's grades will be added to the Weekly Total.`)) {
+        students[currentClass].forEach(s => {
+            const todayGrade = calculateDailyGrade(s);
+            s.weeklyBehavior = (s.weeklyBehavior || 0) + (s.behaviorMarks || 0);
+            s.weeklyInstruction = (s.weeklyInstruction || 0) + (s.instructionMarks || 0);
+            s.totalScore = (s.totalScore || 0) + todayGrade;
+            s.daysTracked = (s.daysTracked || 0) + 1;
+            s.behaviorMarks = 0;
+            s.instructionMarks = 0;
+            s.warn = false;
+        });
+        saveAndRender();
+    }
+}
+
+function fullWeeklyReset() {
+    if (confirm("CLEAR ALL WEEKLY TOTALS? Do this only on Monday mornings.")) {
+        students[currentClass].forEach(s => {
+            s.weeklyBehavior = 0;
+            s.weeklyInstruction = 0;
+            s.totalScore = 0;
+            s.daysTracked = 0;
+        });
+        saveAndRender();
+    }
+}
+
+/**
+ * CLOUD SYNC
  */
 async function saveToCloud() {
-    // Add a timestamp so the Google Script knows which version is the newest
     students.updatedAt = Date.now();
-
     try {
         const blob = new Blob([JSON.stringify(students)], { type: 'text/plain' });
-        
-        await fetch(GOOGLE_SHEET_URL, {
-            method: "POST",
-            mode: "no-cors",
-            body: blob
-        });
-        console.log("Cloud sync sent at: " + new Date(students.updatedAt).toLocaleTimeString());
-    } catch (error) {
-        console.error("Cloud save failed:", error);
-    }
+        await fetch(GOOGLE_SHEET_URL, { method: "POST", mode: "no-cors", body: blob });
+    } catch (e) { console.error("Cloud save failed", e); }
 }
 
 async function pullFromCloud() {
     try {
         const response = await fetch(GOOGLE_SHEET_URL, { redirect: "follow" });
         const textData = await response.text();
-        
-        // SAFETY GATE: If data is missing or broken, stop here.
-        if (!textData || !textData.trim().startsWith("{")) {
-            console.warn("Invalid cloud data received. Keeping local students.");
-            return;
-        }
-
+        if (!textData || !textData.trim().startsWith("{")) return;
         const cloudData = JSON.parse(textData);
-        
-        // CONFLICT RESOLUTION: Only update if cloud data is newer than local data
         if (cloudData.updatedAt && (!students.updatedAt || cloudData.updatedAt > students.updatedAt)) {
             students = cloudData;
             localStorage.setItem('classroomData', JSON.stringify(students));
             updateClassDropdown();
             renderStudents();
-            console.log("Cloud sync successful: Updated with newer data.");
-        } else {
-            console.log("Local data is already up-to-date.");
         }
-    } catch (error) {
-        console.error("Cloud pull failed:", error);
-    }
+    } catch (e) { console.error("Cloud pull failed", e); }
 }
 
 /**
- * Manual Force Restore (Use this if a device is completely out of sync)
+ * UI RENDERING
  */
-async function forceSync() {
-    if (confirm("This will overwrite EVERYTHING on this screen with the data from the Google Sheet. Continue?")) {
-        try {
-            const response = await fetch(GOOGLE_SHEET_URL, { redirect: "follow" });
-            const cloudData = await response.json();
-            if (cloudData && Object.keys(cloudData).length > 0) {
-                students = cloudData;
-                localStorage.setItem('classroomData', JSON.stringify(students));
-                updateClassDropdown();
-                renderStudents();
-                alert("Restored from Cloud!");
-            }
-        } catch (e) {
-            alert("Failed to reach the cloud.");
-        }
-    }
+function renderStudents() {
+    const container = document.getElementById('studentList');
+    container.innerHTML = "";
+    if (!students[currentClass]) return;
+
+    const sortedList = [...students[currentClass]].sort((a, b) => a.name.localeCompare(b.name));
+
+    sortedList.forEach((student) => {
+        // 1. Calculate Daily Grade for the badge
+        const dailyGrade = calculateDailyGrade(student);
+        
+        // 2. Real-time Weekly Math: Combine saved history + what's currently on screen
+        const totalBehaviorForWeek = (student.weeklyBehavior || 0) + (student.behaviorMarks || 0);
+        
+        // We calculate the average by adding today's "live" score to the saved "totalScore"
+        const liveTotalScore = (student.totalScore || 0) + dailyGrade;
+        const liveDaysTracked = (student.daysTracked || 0) + 1;
+        const weeklyAvg = Math.round(liveTotalScore / liveDaysTracked);
+        
+        const card = document.createElement('div');
+        let status = (student.behaviorMarks > 0 || student.instructionMarks > 0) ? 'danger' : (student.warn ? 'warning' : '');
+        
+        card.className = `student-card ${status}`;
+        card.innerHTML = `
+            <div class="card-header">
+                <h3>${student.name}</h3>
+                <div class="daily-score">${dailyGrade}</div>
+            </div>
+
+            <button class="warn-btn ${student.warn ? 'active' : ''}" onclick="toggleWarning('${student.name}')">
+                ${student.warn ? '⚠️ Warning Given' : 'Give Warning'}
+            </button>
+
+            <div class="mark-section">
+                <div class="mark-control">
+                    <span class="mark-label">Behavior (Verses)</span>
+                    <div class="count">${student.behaviorMarks || 0}</div>
+                    <div class="btns">
+                        <button onclick="updateMark('${student.name}', 'behaviorMarks', 1)">+</button>
+                        <button onclick="updateMark('${student.name}', 'behaviorMarks', -1)">-</button>
+                    </div>
+                </div>
+                <div class="mark-control">
+                    <span class="mark-label">Instruction (Focus)</span>
+                    <div class="count">${student.instructionMarks || 0}</div>
+                    <div class="btns">
+                        <button onclick="updateMark('${student.name}', 'instructionMarks', 1)">+</button>
+                        <button onclick="updateMark('${student.name}', 'instructionMarks', -1)">-</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="weekly-summary">
+                <span>Week Avg: ${weeklyAvg}%</span> | <span>Verses Due: ${totalBehaviorForWeek * 10}</span>
+            </div>
+            
+            <button class="delete-btn" onclick="deleteStudent('${student.name}')">Remove</button>
+        `;
+        container.appendChild(card);
+    });
 }
 
-/**
- * Dynamic Class Management
- */
 function updateClassDropdown() {
     classSelector.innerHTML = "";
     Object.keys(students).filter(key => key !== 'updatedAt').sort().forEach(className => {
@@ -108,11 +195,10 @@ classSelector.addEventListener('change', (e) => {
 });
 
 async function manageClasses() {
-    const newClassName = prompt("New class name:");
-    if (newClassName && !students[newClassName]) {
-        await pullFromCloud(); // Try to get other classes before adding
-        students[newClassName] = [];
-        currentClass = newClassName;
+    const newName = prompt("New class name:");
+    if (newName && !students[newName]) {
+        students[newName] = [];
+        currentClass = newName;
         updateClassDropdown();
         saveAndRender();
     }
@@ -128,85 +214,18 @@ function deleteCurrentClass() {
     }
 }
 
-/**
- * Student Management Logic
- */
-function addStudent() {
-    const input = document.getElementById('studentName');
-    const name = input.value.trim();
-    if (!name || students[currentClass].some(s => s.name.toLowerCase() === name.toLowerCase())) return;
-
-    students[currentClass].push({ name, dots: 0, warn: false });
-    input.value = "";
-    saveAndRender();
-}
-
-function toggleWarning(studentName) {
-    const student = students[currentClass].find(s => s.name === studentName);
-    if (student) {
-        student.warn = !student.warn;
+function deleteStudent(name) {
+    if (confirm(`Remove ${name}?`)) {
+        students[currentClass] = students[currentClass].filter(s => s.name !== name);
         saveAndRender();
     }
 }
 
-function updateDots(studentName, change) {
-    const student = students[currentClass].find(s => s.name === studentName);
-    if (student) {
-        student.dots = Math.max(0, student.dots + change);
-        saveAndRender();
-    }
-}
-
-function deleteStudent(studentName) {
-    if (confirm(`Remove ${studentName}?`)) {
-        students[currentClass] = students[currentClass].filter(s => s.name !== studentName);
-        saveAndRender();
-    }
-}
-
-function resetDots() {
-    if (confirm(`Reset all?`)) {
-        students[currentClass].forEach(s => { s.dots = 0; s.warn = false; });
-        saveAndRender();
-    }
-}
-
-/**
- * Persistence & UI Rendering
- */
 function saveAndRender() {
     localStorage.setItem('classroomData', JSON.stringify(students));
     localStorage.setItem('lastSelectedClass', currentClass);
     renderStudents();
     saveToCloud();
-}
-
-function renderStudents() {
-    const container = document.getElementById('studentList');
-    container.innerHTML = "";
-    if (!students[currentClass]) return;
-
-    const sortedList = [...students[currentClass]].sort((a, b) => a.name.localeCompare(b.name));
-
-    sortedList.forEach((student) => {
-        const card = document.createElement('div');
-        let statusClass = student.dots > 0 ? 'danger' : (student.warn ? 'warning' : '');
-        card.className = `student-card ${statusClass}`;
-        card.innerHTML = `
-            <h3>${student.name}</h3>
-            <button class="warn-btn" onclick="toggleWarning('${student.name}')">
-                ${student.warn ? '⚠️ Warned' : 'Give Warning'}
-            </button>
-            <div class="dot-display">${student.dots}</div>
-            <div class="verse-display">${student.dots * 10} Verses</div>
-            <div class="card-controls">
-                <button class="dot-btn" onclick="updateDots('${student.name}', 1)">+ Dot</button>
-                <button class="minus-btn" onclick="updateDots('${student.name}', -1)">-</button>
-            </div>
-            <button class="delete-btn" onclick="deleteStudent('${student.name}')">Remove Student</button>
-        `;
-        container.appendChild(card);
-    });
 }
 
 init();
